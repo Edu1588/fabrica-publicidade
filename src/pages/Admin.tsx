@@ -215,6 +215,7 @@ export default function Admin() {
         updateActiveSlideField('fabricante', data.data.montadora || '');
         updateActiveSlideField('modelo', data.data.modelo || '');
         updateActiveSlideField('descricao', data.data.descricao || '');
+        updateActiveSlideField('title', `${scrapeQuery.toUpperCase().replace(/[^A-Z0-9]/g, '')}_carrossel_unimais`);
         setToast({ message: 'Dados importados com sucesso!', type: 'success' });
         setScrapeQuery('');
       } else {
@@ -1058,15 +1059,17 @@ export default function Admin() {
 
                     {/* LIVE VIEW STAGE */}
                     {activeSlide && (
-                      <div className="w-full flex justify-center items-center py-4 bg-[#09090d] rounded-2xl border border-white/5 relative group">
+                      <div className="w-full flex justify-center items-center py-4 sm:py-8 bg-[#09090d] rounded-2xl border border-white/5 relative group overflow-hidden">
                         
-                        {/* Aspect Ratio bounding container to fit precisely 1080x1350 */}
-                        <div 
-                          id="slide-preview-container"
-                          ref={previewRef}
-                          className="w-[360px] h-[450px] relative overflow-hidden bg-black flex flex-col justify-between shadow-2xl select-none"
-                          style={{ minWidth: '360px', minHeight: '450px' }}
-                        >
+                        {/* Wrapper for responsive scaling */}
+                        <div className="origin-top scale-[0.75] sm:scale-100 transition-transform flex items-center justify-center h-[337px] sm:h-[450px]">
+                          {/* Aspect Ratio bounding container to fit precisely 1080x1350 */}
+                          <div 
+                            id="slide-preview-container"
+                            ref={previewRef}
+                            className="w-[360px] h-[450px] relative overflow-hidden bg-black flex flex-col justify-between shadow-2xl select-none"
+                            style={{ minWidth: '360px', minHeight: '450px' }}
+                          >
                           
                           {/* CONDITIONAL RENDERING OF THE TEMPLATE BODY */}
                           {activeSlide.type === 'capa' ? (
@@ -1112,15 +1115,15 @@ export default function Admin() {
                               />
                                 
                               {/* Header Texts (Transparent background) */}
-                              <div className="p-5 relative flex flex-col justify-end h-[125px] z-20 pointer-events-none">
-                                <div className="relative leading-none mt-4">
-                                  <div className="text-[#005cbf] font-extrabold text-2xl italic tracking-wide uppercase leading-none drop-shadow-md">
+                              <div className="p-5 relative flex flex-col justify-end h-[125px] z-20 pointer-events-none font-saira uppercase" style={{ fontFamily: '"Saira Extra Condensed", sans-serif' }}>
+                                <div className="relative mt-2">
+                                  <div className="text-[#0377f9] leading-none font-bold" style={{ fontSize: '34pt', color: '#0377f9', marginBottom: '-5px' }}>
                                     {activeSlide.fabricante || 'FABRICANTE'}
                                   </div>
-                                  <div className="text-[#012d6a] font-black text-4xl italic tracking-tighter uppercase mt-1 leading-none drop-shadow-md">
+                                  <div className="text-[#1b3265] leading-none font-bold" style={{ fontSize: '52pt', color: '#1b3265', marginBottom: '2px', marginTop: '-5px' }}>
                                     {activeSlide.modelo || 'MODELO'}
                                   </div>
-                                  <div className="text-gray-700 font-bold text-[10px] italic tracking-wider uppercase mt-1.5 leading-none drop-shadow-sm bg-white/60 inline-block px-1 py-0.5 rounded">
+                                  <div className="text-black leading-none font-bold" style={{ fontSize: '19pt', color: '#000000', marginTop: '0px' }}>
                                     {activeSlide.descricao || 'DESCRIÇÃO COMPLETA'}
                                   </div>
                                 </div>
@@ -1128,25 +1131,7 @@ export default function Admin() {
 
                               <div className="flex-1 z-20 pointer-events-none"></div>
 
-                              {/* Bottom 4 conditions cards (Transparent background) */}
-                              <div className="text-white py-3.5 px-1.5 grid grid-cols-4 z-20 pointer-events-none mb-[32px]">
-                                <div className="flex flex-col items-center justify-center text-center px-1">
-                                  <span className="text-[7px] tracking-tight font-medium text-white uppercase drop-shadow-md">{activeSlide.condicao1Label}</span>
-                                  <span className="text-sm font-black italic text-cyan-400 mt-0.5 uppercase drop-shadow-md">{activeSlide.condicao1Val}</span>
-                                </div>
-                                <div className="flex flex-col items-center justify-center text-center px-1">
-                                  <span className="text-[7px] tracking-tight font-medium text-white uppercase drop-shadow-md">{activeSlide.condicao2Label}</span>
-                                  <span className="text-sm font-black italic text-cyan-400 mt-0.5 uppercase drop-shadow-md">{activeSlide.condicao2Val}</span>
-                                </div>
-                                <div className="flex flex-col items-center justify-center text-center px-1">
-                                  <span className="text-[7px] tracking-tight font-medium text-white uppercase drop-shadow-md">{activeSlide.condicao3Label}</span>
-                                  <span className="text-sm font-black italic text-cyan-400 mt-0.5 uppercase drop-shadow-md">{activeSlide.condicao3Val}</span>
-                                </div>
-                                <div className="flex flex-col items-center justify-center text-center px-1">
-                                  <span className="text-[7px] tracking-tight font-medium text-white uppercase drop-shadow-md">{activeSlide.condicao4Label}</span>
-                                  <span className="text-sm font-black italic text-cyan-400 mt-0.5 uppercase text-center drop-shadow-md">{activeSlide.condicao4Val}</span>
-                                </div>
-                              </div>
+                              
 
                             </div>
                           ) : (
@@ -1173,7 +1158,9 @@ export default function Admin() {
                             </div>
                           )}
 
-                        </div>                      </div>
+                        </div>
+                        </div>
+                      </div>
                     )}
 
                     {/* SLIDES STRIP / SELECT PANEL */}

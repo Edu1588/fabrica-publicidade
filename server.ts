@@ -22,7 +22,8 @@ async function startServer() {
 
       // 1. Search for the vehicle
       // If it's a specific test plate from the user, return the mock data directly
-      if (search.toUpperCase() === 'GAP4D01') {
+      const normalizedSearch = search.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (normalizedSearch === 'GAP4D01') {
         return res.json({
           success: true,
           data: {
@@ -112,9 +113,19 @@ ${cleanHtml}
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  if (process.env.NODE_ENV !== 'production' || process.env.RENDER || process.env.RAILWAY_ENVIRONMENT || !process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
+  
+  return app;
 }
 
-startServer();
+const appPromise = startServer();
+export default (req, res) => {
+  appPromise.then(app => app(req, res)).catch(err => {
+    console.error(err);
+    res.status(500).send('Server Error');
+  });
+};
