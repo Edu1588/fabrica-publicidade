@@ -1115,17 +1115,15 @@ export default function Admin() {
                               />
                                 
                               {/* Header Texts (Transparent background) */}
-                              <div className="p-5 relative flex flex-col justify-end h-[125px] z-20 pointer-events-none font-saira uppercase" style={{ fontFamily: '"Saira Extra Condensed", sans-serif' }}>
-                                <div className="relative mt-2">
-                                  <div className="text-[#0377f9] leading-none font-bold" style={{ fontSize: '34pt', color: '#0377f9', marginBottom: '-5px' }}>
-                                    {activeSlide.fabricante || 'FABRICANTE'}
-                                  </div>
-                                  <div className="text-[#1b3265] leading-none font-bold" style={{ fontSize: '52pt', color: '#1b3265', marginBottom: '2px', marginTop: '-5px' }}>
-                                    {activeSlide.modelo || 'MODELO'}
-                                  </div>
-                                  <div className="text-black leading-none font-bold" style={{ fontSize: '19pt', color: '#000000', marginTop: '0px' }}>
-                                    {activeSlide.descricao || 'DESCRIÇÃO COMPLETA'}
-                                  </div>
+                              <div className="absolute top-[95px] left-0 w-full px-[18px] z-20 pointer-events-none font-saira uppercase" style={{ fontFamily: '"Saira Extra Condensed", sans-serif' }}>
+                                <div className="text-[#0377f9] leading-none font-black" style={{ fontSize: '28px', color: '#0377f9', marginBottom: '-2px' }}>
+                                  {activeSlide.fabricante || 'FABRICANTE'}
+                                </div>
+                                <div className="text-[#1b3265] leading-none font-black tracking-tight" style={{ fontSize: '60px', color: '#1b3265', marginBottom: '2px', marginTop: '-8px' }}>
+                                  {activeSlide.modelo || 'MODELO'}
+                                </div>
+                                <div className="text-black leading-none font-medium" style={{ fontSize: '15px', color: '#000000', marginTop: '0px' }}>
+                                  {activeSlide.descricao || 'DESCRIÇÃO COMPLETA'}
                                 </div>
                               </div>
 

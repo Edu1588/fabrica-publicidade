@@ -39,26 +39,35 @@ async function startServer() {
       console.log(`Fetching search URL: ${searchUrl}`);
       const searchResponse = await fetch(searchUrl);
       const searchHtml = await searchResponse.text();
-      const $search = cheerio.load(searchHtml);
-
-      // Extract the first product link from the search results
-      let productLink = null;
-      $search("a").each((i, el) => {
-        const href = $search(el).attr("href");
-        if (href && href.includes("/product/") && !productLink) {
-          productLink = href;
+      
+      let productHtml = "";
+      
+      // If we were redirected directly to a product page
+      if (searchResponse.url && searchResponse.url.includes('/product/')) {
+        console.log(`Redirected directly to product page: ${searchResponse.url}`);
+        productHtml = searchHtml;
+      } else {
+        const $search = cheerio.load(searchHtml);
+  
+        // Extract the first product link from the search results
+        let productLink = null;
+        $search("a").each((i, el) => {
+          const href = $search(el).attr("href");
+          if (href && href.includes("/product/") && !productLink) {
+            productLink = href;
+          }
+        });
+  
+        if (!productLink) {
+          return res.status(404).json({ error: "Veículo não encontrado no site." });
         }
-      });
-
-      if (!productLink) {
-        return res.status(404).json({ error: "Veículo não encontrado no site." });
+  
+        console.log(`Found product link: ${productLink}`);
+  
+        // 2. Fetch the product page
+        const productResponse = await fetch(productLink);
+        productHtml = await productResponse.text();
       }
-
-      console.log(`Found product link: ${productLink}`);
-
-      // 2. Fetch the product page
-      const productResponse = await fetch(productLink);
-      const productHtml = await productResponse.text();
       
       // Clean up HTML to reduce tokens before sending to Gemini
       const $product = cheerio.load(productHtml);
