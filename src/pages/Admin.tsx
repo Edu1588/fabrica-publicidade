@@ -141,13 +141,18 @@ export default function Admin() {
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
 
   const handleAddSlide = (type: 'veiculo' | 'capa' | 'final') => {
+    let baseSlide = null;
+    if (type === 'veiculo') {
+      baseSlide = [...slides].reverse().find(s => s.type === 'veiculo');
+    }
+    
     const newSlide: CarouselSlide = {
       id: crypto.randomUUID(),
       type,
-      title: type === 'veiculo' ? 'NOVO VEÍCULO' : type === 'capa' ? 'NOVA CAPA' : 'NOVO FINAL',
-      fabricante: '',
-      modelo: '',
-      descricao: '',
+      title: baseSlide ? baseSlide.title : (type === 'veiculo' ? 'NOVO VEÍCULO' : type === 'capa' ? 'NOVA CAPA' : 'NOVO FINAL'),
+      fabricante: baseSlide ? baseSlide.fabricante : '',
+      modelo: baseSlide ? baseSlide.modelo : '',
+      descricao: baseSlide ? baseSlide.descricao : '',
       imageUrl: '',
       zoom: 1,
       posX: 0,
@@ -157,7 +162,7 @@ export default function Admin() {
       condicao3Label: '', condicao3Val: '',
       condicao4Label: '', condicao4Val: '',
       lojasCapa: '',
-      website: ''
+      website: baseSlide ? baseSlide.website : ''
     };
     const updated = [...slides, newSlide];
     setSlides(updated);
@@ -180,7 +185,11 @@ export default function Admin() {
   const activeSlide = slides[activeSlideIndex];
 
   const updateActiveSlideField = (field: keyof CarouselSlide, value: any) => {
-    setSlides(slides.map((s, idx) => idx === activeSlideIndex ? { ...s, [field]: value } : s));
+    setSlides(prevSlides => prevSlides.map((s, idx) => idx === activeSlideIndex ? { ...s, [field]: value } : s));
+  };
+
+  const updateMultipleActiveSlideFields = (updates: Partial<CarouselSlide>) => {
+    setSlides(prevSlides => prevSlides.map((s, idx) => idx === activeSlideIndex ? { ...s, ...updates } : s));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,10 +221,12 @@ export default function Admin() {
       });
       const data = await res.json();
       if (data.success && data.data) {
-        updateActiveSlideField('fabricante', data.data.montadora || '');
-        updateActiveSlideField('modelo', data.data.modelo || '');
-        updateActiveSlideField('descricao', data.data.descricao || '');
-        updateActiveSlideField('title', `${scrapeQuery.toUpperCase().replace(/[^A-Z0-9]/g, '')}_carrossel_unimais`);
+        updateMultipleActiveSlideFields({
+          fabricante: data.data.montadora || '',
+          modelo: data.data.modelo || '',
+          descricao: data.data.descricao || '',
+          title: `${scrapeQuery.toUpperCase().replace(/[^A-Z0-9]/g, '')}_carrossel_unimais`
+        });
         setToast({ message: 'Dados importados com sucesso!', type: 'success' });
         setScrapeQuery('');
       } else {
@@ -769,16 +780,30 @@ export default function Admin() {
                     {activeSlide ? (
                       <div className="space-y-5 text-xs font-mono">
                         
-                        {/* Slide Title (Local reference) */}
-                        <div className="space-y-1.5">
-                          <label className="text-white/60 uppercase text-[9px] tracking-wider block">Identificador do Slide (Uso Interno)</label>
-                          <input
-                            type="text"
-                            value={activeSlide.title}
-                            onChange={e => updateActiveSlideField('title', e.target.value)}
-                            className="w-full bg-[#111116] border border-white/10 rounded-xl py-2.5 px-4 focus:outline-none focus:border-[#C46A1A] text-white"
-                          />
-                        </div>
+
+
+                        {activeSlide.type === 'veiculo' && (
+                          <div className="flex flex-col sm:flex-row items-end gap-3 mb-2 bg-[#C46A1A]/10 p-3 rounded-xl border border-[#C46A1A]/30">
+                            <div className="flex-1 w-full space-y-1.5">
+                              <label className="text-[#C46A1A] text-[9px] font-mono tracking-wider block">Importar Dados (Placa ou Modelo)</label>
+                              <input
+                                type="text"
+                                value={scrapeQuery}
+                                onChange={e => setScrapeQuery(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleScrape()}
+                                placeholder="Ex: ESR7C02"
+                                className="w-full bg-[#111116] border border-white/10 rounded-lg py-2 px-3 focus:outline-none focus:border-[#C46A1A] text-white text-xs"
+                              />
+                            </div>
+                            <button
+                                onClick={handleScrape}
+                                disabled={scraping || !scrapeQuery}
+                                className="bg-[#C46A1A] text-black text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg hover:bg-white disabled:opacity-50 transition-colors w-full sm:w-auto h-8 flex items-center justify-center shrink-0"
+                              >
+                                {scraping ? 'Buscando...' : 'Importar'}
+                              </button>
+                          </div>
+                        )}
 
                         {/* Slide Type Switcher */}
                         <div className="space-y-1.5">
@@ -820,7 +845,7 @@ export default function Admin() {
                           </div>
                         </div>
 
-                        {/* CONDITIONAL CONTROLS BASED ON TYPE */}
+                                                {/* CONDITIONAL CONTROLS BASED ON TYPE */}
                         {activeSlide.type === 'capa' ? (
                           // COVER SLIDE EDITABLES
                           <div className="space-y-4 pt-2 border-t border-white/5 text-center text-white/50 text-xs font-mono">
@@ -829,26 +854,7 @@ export default function Admin() {
                         ) : activeSlide.type === 'veiculo' ? (
                           // VEHICLE SLIDE EDITABLES
                           <div className="space-y-4 pt-2 border-t border-white/5">
-                            <div className="flex flex-col sm:flex-row items-end gap-3 mb-2 bg-[#C46A1A]/10 p-3 rounded-xl border border-[#C46A1A]/30">
-                              <div className="flex-1 w-full space-y-1.5">
-                                <label className="text-[#C46A1A] text-[9px] font-mono tracking-wider block">Importar Dados (Placa ou Modelo)</label>
-                                <input
-                                  type="text"
-                                  value={scrapeQuery}
-                                  onChange={e => setScrapeQuery(e.target.value)}
-                                  onKeyDown={e => e.key === 'Enter' && handleScrape()}
-                                  placeholder="Ex: ESR7C02"
-                                  className="w-full bg-[#111116] border border-white/10 rounded-lg py-2 px-3 focus:outline-none focus:border-[#C46A1A] text-white text-xs"
-                                />
-                              </div>
-                              <button
-                                onClick={handleScrape}
-                                disabled={scraping || !scrapeQuery}
-                                className="bg-[#C46A1A] text-black text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg hover:bg-white disabled:opacity-50 transition-colors w-full sm:w-auto h-8 flex items-center justify-center shrink-0"
-                              >
-                                {scraping ? 'Buscando...' : 'Importar'}
-                              </button>
-                            </div>
+
 
                             <span className="text-[10px] text-[#C46A1A] uppercase tracking-wider block mt-4">Campos do Veículo</span>
                             
@@ -1031,136 +1037,6 @@ export default function Admin() {
                   {/* RIGHT COLUMN: Live View & Downloads & Carousel Slide Strip (55%) */}
                   <div className="lg:col-span-7 flex flex-col items-center gap-6">
                     
-                    {/* DOWNLOAD ACTIONS PANEL */}
-                    {activeSlide && (
-                      <div className="w-full bg-[#0c0c10] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                        <div className="text-center sm:text-left">
-                          <span className="text-[9px] font-mono uppercase text-white/40 tracking-wider">Exportar Ativo Final</span>
-                          <h4 className="text-xs font-mono font-bold text-white uppercase mt-0.5 max-w-[200px] truncate">{activeSlide.title}</h4>
-                        </div>
-                        <div className="flex gap-3 w-full sm:w-auto">
-                          <button
-                            onClick={handleDownloadPNG}
-                            className="flex-1 sm:flex-none bg-[#C46A1A] hover:bg-[#FF7A00] text-black font-mono font-bold text-xs uppercase tracking-widest py-3 px-5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#C46A1A]/10"
-                          >
-                            <Download className="w-4 h-4" />
-                            Baixar PNG
-                          </button>
-                          <button
-                            onClick={handleDownloadPDF}
-                            className="flex-1 sm:flex-none bg-[#111116] hover:bg-white/5 text-white border border-white/10 font-mono font-bold text-xs uppercase tracking-widest py-3 px-5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
-                          >
-                            <FileText className="w-4 h-4" />
-                            Baixar PDF
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* LIVE VIEW STAGE */}
-                    {activeSlide && (
-                      <div className="w-full flex justify-center items-center py-4 sm:py-8 bg-[#09090d] rounded-2xl border border-white/5 relative group overflow-hidden">
-                        
-                        {/* Wrapper for responsive scaling */}
-                        <div className="origin-top scale-[0.75] sm:scale-100 transition-transform flex items-center justify-center h-[337px] sm:h-[450px]">
-                          {/* Aspect Ratio bounding container to fit precisely 1080x1350 */}
-                          <div 
-                            id="slide-preview-container"
-                            ref={previewRef}
-                            className="w-[360px] h-[450px] relative overflow-hidden bg-black flex flex-col justify-between shadow-2xl select-none"
-                            style={{ minWidth: '360px', minHeight: '450px' }}
-                          >
-                          
-                          {/* CONDITIONAL RENDERING OF THE TEMPLATE BODY */}
-                          {activeSlide.type === 'capa' ? (
-                            
-                            // A. COVER LAYOUT (FIXED IMAGE)
-                            <div className="flex-1 w-full h-full relative">
-                              <img 
-                                src="https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274799/odxwrvzl99npzp7kqi5d.png" 
-                                alt="Capa" 
-                                className="absolute inset-0 w-full h-full object-cover" 
-                                crossOrigin="anonymous" 
-                              />
-                            </div>
-
-                          ) : activeSlide.type === 'veiculo' ? (
-                            
-                            // B. VEHICLE AD TEMPLATE (PNG OVERLAY STYLE)
-                            <div className="flex-1 flex flex-col justify-between relative overflow-hidden bg-black">
-                              
-                              {/* Background Car Photo */}
-                              {activeSlide.imageUrl && (
-                                <img
-                                  src={activeSlide.imageUrl}
-                                  alt="Carro Oferta"
-                                  className="absolute max-w-none origin-center z-0"
-                                  style={{
-                                    transform: `translate(${activeSlide.posX}px, ${activeSlide.posY}px) scale(${activeSlide.zoom})`,
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover'
-                                  }}
-                                  referrerPolicy="no-referrer"
-                                  crossOrigin="anonymous"
-                                />
-                              )}
-
-                              {/* FIXED PNG OVERLAY */}
-                              <img 
-                                src="https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274796/ujijynb4i1ovomlekkrj.png" 
-                                alt="Base Frame" 
-                                className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none" 
-                                crossOrigin="anonymous" 
-                              />
-                                
-                              {/* Header Texts (Transparent background) */}
-                              <div className="absolute top-[95px] left-0 w-full px-[18px] z-20 pointer-events-none font-saira uppercase" style={{ fontFamily: '"Saira Extra Condensed", sans-serif' }}>
-                                <div className="text-[#0377f9] leading-none font-black" style={{ fontSize: '28px', color: '#0377f9', marginBottom: '-2px' }}>
-                                  {activeSlide.fabricante || 'FABRICANTE'}
-                                </div>
-                                <div className="text-[#1b3265] leading-none font-black tracking-tight" style={{ fontSize: '60px', color: '#1b3265', marginBottom: '2px', marginTop: '-8px' }}>
-                                  {activeSlide.modelo || 'MODELO'}
-                                </div>
-                                <div className="text-black leading-none font-medium" style={{ fontSize: '15px', color: '#000000', marginTop: '0px' }}>
-                                  {activeSlide.descricao || 'DESCRIÇÃO COMPLETA'}
-                                </div>
-                              </div>
-
-                              <div className="flex-1 z-20 pointer-events-none"></div>
-
-                              
-
-                            </div>
-                          ) : (
-                            // C. FINAL TEMPLATE (FIXED IMAGE)
-                            <div className="flex-1 w-full h-full relative">
-                              <img 
-                                src="https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274796/rhd5ngpu9rhntpkqeh7v.png" 
-                                alt="Final" 
-                                className="absolute inset-0 w-full h-full object-cover" 
-                                crossOrigin="anonymous" 
-                              />
-                            </div>
-                          )}
-
-                          {/* GLOBALLY SHARED WEB FOOTER BAR - Only show if not capa or final, or overlay it? Actually, if capa and final are fixed full-height images, they probably contain the footer. We will only render it for veiculo if the PNG doesn't have it. We'll render it absolutely at the bottom for veiculo. */}
-                          {activeSlide.type === 'veiculo' && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-[#012d6a] text-white py-2 flex items-center justify-center gap-1 text-[8px] font-mono tracking-widest uppercase border-t border-cyan-400/10 z-20">
-                              <svg className="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="2" y1="12" x2="22" y2="12"></line>
-                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                              </svg>
-                              <span>{activeSlide.website || 'UNIMAISVEICULOS.COM.BR'}</span>
-                            </div>
-                          )}
-
-                        </div>
-                        </div>
-                      </div>
-                    )}
-
                     {/* SLIDES STRIP / SELECT PANEL */}
                     <div className="w-full bg-[#0c0c10] border border-white/5 rounded-2xl p-6 space-y-4">
                       
@@ -1228,6 +1104,147 @@ export default function Admin() {
                       </div>
 
                     </div>
+
+                    {/* DOWNLOAD ACTIONS PANEL */}
+                    {activeSlide && (
+                      <div className="w-full bg-[#0c0c10] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                        <div className="text-center sm:text-left">
+                          <span className="text-[9px] font-mono uppercase text-white/40 tracking-wider">Exportar Ativo Final</span>
+                          <h4 className="text-xs font-mono font-bold text-white uppercase mt-0.5 max-w-[200px] truncate">{activeSlide.title}</h4>
+                        </div>
+                        <div className="flex gap-3 w-full sm:w-auto">
+                          <button
+                            onClick={handleDownloadPNG}
+                            className="flex-1 sm:flex-none bg-[#C46A1A] hover:bg-[#FF7A00] text-black font-mono font-bold text-xs uppercase tracking-widest py-3 px-5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#C46A1A]/10"
+                          >
+                            <Download className="w-4 h-4" />
+                            Baixar PNG
+                          </button>
+                          <button
+                            onClick={handleDownloadPDF}
+                            className="flex-1 sm:flex-none bg-[#111116] hover:bg-white/5 text-white border border-white/10 font-mono font-bold text-xs uppercase tracking-widest py-3 px-5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <FileText className="w-4 h-4" />
+                            Baixar PDF
+                          </button>
+
+                        {/* Slide Title (Local reference) */}
+                        <div className="space-y-1.5 pt-4 border-t border-white/5">
+                          <label className="text-white/60 uppercase text-[9px] tracking-wider block">Identificador do Slide (Automático)</label>
+                          <input
+                            type="text"
+                            value={activeSlide.title}
+                            readOnly
+                            disabled
+                            className="w-full bg-[#111116] border border-white/10 rounded-xl py-2.5 px-4 text-white/50 cursor-not-allowed"
+                          />
+                        </div>
+
+                        </div>
+                      </div>
+                    )}
+
+                    {/* LIVE VIEW STAGE */}
+                    {activeSlide && (
+                      <div className="w-full flex justify-center items-center py-4 sm:py-8 bg-[#09090d] rounded-2xl border border-white/5 relative group overflow-hidden">
+                        
+                        {/* Wrapper for responsive scaling */}
+                        <div className="origin-top scale-[0.75] sm:scale-100 transition-transform flex items-center justify-center h-[337px] sm:h-[450px]">
+                          {/* Aspect Ratio bounding container to fit precisely 1080x1350 */}
+                          <div 
+                            id="slide-preview-container"
+                            ref={previewRef}
+                            className="w-[360px] h-[450px] relative overflow-hidden bg-black flex flex-col justify-between shadow-2xl select-none"
+                            style={{ minWidth: '360px', minHeight: '450px' }}
+                          >
+                          
+                          {/* CONDITIONAL RENDERING OF THE TEMPLATE BODY */}
+                          {activeSlide.type === 'capa' ? (
+                            
+                            // A. COVER LAYOUT (FIXED IMAGE)
+                            <div className="flex-1 w-full h-full relative">
+                              <img 
+                                src="https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274799/odxwrvzl99npzp7kqi5d.png" 
+                                alt="Capa" 
+                                className="absolute inset-0 w-full h-full object-cover" crossOrigin="anonymous" 
+                              />
+                            </div>
+
+                          ) : activeSlide.type === 'veiculo' ? (
+                            
+                            // B. VEHICLE AD TEMPLATE (PNG OVERLAY STYLE)
+                            <div className="flex-1 flex flex-col justify-between relative overflow-hidden bg-black">
+                              
+                              {/* Background Car Photo */}
+                              {activeSlide.imageUrl && (
+                                <img
+                                  src={activeSlide.imageUrl}
+                                  alt="Carro Oferta"
+                                  className="absolute max-w-none origin-center z-0"
+                                  style={{
+                                    transform: `translate(${activeSlide.posX}px, ${activeSlide.posY}px) scale(${activeSlide.zoom})`,
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'contain'
+                                  }}
+                                  referrerPolicy="no-referrer"
+                                />
+                              )}
+
+                              {/* FIXED PNG OVERLAY */}
+                              <img 
+                                src="https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274796/ujijynb4i1ovomlekkrj.png" 
+                                alt="Base Frame" 
+                                className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none" crossOrigin="anonymous" 
+                              />
+                                
+                              {/* Header Texts (Transparent background) */}
+                              <div className="absolute top-[25px] left-0 w-full px-[20px] z-20 pointer-events-none font-saira uppercase italic" style={{ fontFamily: '"Saira Extra Condensed", sans-serif' }}>
+                                <div className="text-[#0377f9] leading-none font-light tracking-widest italic" style={{ fontSize: '24px', color: '#0377f9', marginBottom: '-4px' }}>
+                                  {activeSlide.fabricante || 'FABRICANTE'}
+                                </div>
+                                <div className="text-[#1b3265] leading-none font-black tracking-tighter italic" style={{ fontSize: '48px', color: '#1b3265', marginBottom: '2px', marginTop: '-8px' }}>
+                                  {activeSlide.modelo || 'MODELO'}
+                                </div>
+                                <div className="text-black leading-none font-bold tracking-wide italic" style={{ fontSize: '13px', color: '#000000', marginTop: '-2px' }}>
+                                  {activeSlide.descricao || 'DESCRIÇÃO COMPLETA'}
+                                </div>
+                              </div>
+
+                              <div className="flex-1 z-20 pointer-events-none"></div>
+
+                              
+
+                            </div>
+                          ) : (
+                            // C. FINAL TEMPLATE (FIXED IMAGE)
+                            <div className="flex-1 w-full h-full relative">
+                              <img 
+                                src="https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274796/rhd5ngpu9rhntpkqeh7v.png" 
+                                alt="Final" 
+                                className="absolute inset-0 w-full h-full object-cover" crossOrigin="anonymous" 
+                              />
+                            </div>
+                          )}
+
+                          {/* GLOBALLY SHARED WEB FOOTER BAR - Only show if not capa or final, or overlay it? Actually, if capa and final are fixed full-height images, they probably contain the footer. We will only render it for veiculo if the PNG doesn't have it. We'll render it absolutely at the bottom for veiculo. */}
+                          {activeSlide.type === 'veiculo' && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-[#012d6a] text-white py-2 flex items-center justify-center gap-1 text-[8px] font-mono tracking-widest uppercase border-t border-cyan-400/10 z-20">
+                              <svg className="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                              </svg>
+                              <span>{activeSlide.website || 'UNIMAISVEICULOS.COM.BR'}</span>
+                            </div>
+                          )}
+
+                        </div>
+                        </div>
+                      </div>
+                    )}
+
+
 
                   </div>
 

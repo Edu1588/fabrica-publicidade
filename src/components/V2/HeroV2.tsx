@@ -55,9 +55,9 @@ export default function HeroV2() {
       </svg>
       {/* Background Image */}
       <div 
-        className="absolute inset-0 z-0 opacity-60 scale-105"
+        className="absolute inset-0 -z-10 opacity-60 scale-105"
         style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1482938289607-e9573fc25ebb?q=80&w=2000&auto=format&fit=crop")',
+          backgroundImage: 'url("https://images.unsplash.com/photo-1624382497193-de32b368de64?q=80&w=1170&auto=format&fit=crop")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}

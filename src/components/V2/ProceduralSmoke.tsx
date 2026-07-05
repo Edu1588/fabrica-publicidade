@@ -123,9 +123,9 @@ const fragmentShader = `
 
         float f = fbm(p + 4.0 * r);
 
-        vec3 colorBg = vec3(0.01, 0.01, 0.01);
-        vec3 colorMid = vec3(0.12, 0.12, 0.12);
-        vec3 colorHigh = vec3(0.25, 0.25, 0.25);
+        vec3 colorBg = vec3(0.0, 0.0, 0.0);
+        vec3 colorMid = vec3(0.5, 0.5, 0.5);
+        vec3 colorHigh = vec3(0.8, 0.8, 0.8);
         vec3 colorHot = vec3(0.4, 0.4, 0.4);
 
         vec3 col = mix(colorBg, colorMid, clamp(f * f * 2.5, 0.0, 1.0));
@@ -138,7 +138,7 @@ const fragmentShader = `
         float grain = fract(sin(dot(vUv * (uTime * 0.1), vec2(12.9898, 78.233))) * 43758.5453) * 0.02;
         col += grain;
 
-        gl_FragColor = vec4(col, 1.0);
+        gl_FragColor = vec4(col, clamp(f * 2.0, 0.0, 1.0));
     }
 `;
 
@@ -154,7 +154,8 @@ export default function ProceduralSmoke() {
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: true });
+    renderer.setClearColor(0x000000, 0);
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     
@@ -261,5 +262,5 @@ export default function ProceduralSmoke() {
     };
   }, []);
 
-  return <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none" />;
+  return <div ref={containerRef} className="absolute inset-0 z-10 pointer-events-none  opacity-80" />;
 }
