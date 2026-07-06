@@ -17,7 +17,8 @@ import {
   Grid,
   FileText
 } from 'lucide-react';
-import { toCanvas } from 'html-to-image';
+import { CorsImage } from '../components/CorsImage';
+import { toPng, toCanvas } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -332,14 +333,17 @@ export default function Admin() {
 
       // Sort to ensure Capa is first, Final is last, and vehicles are in between
       loadedSlides.sort((a, b) => {
-        if (a.type === 'capa') return -1;
-        if (b.type === 'capa') return 1;
-        if (a.type === 'final') return 1;
-        if (b.type === 'final') return -1;
+        if (a.type === 'capa' && b.type !== 'capa') return -1;
+        if (b.type === 'capa' && a.type !== 'capa') return 1;
+        if (a.type === 'final' && b.type !== 'final') return 1;
+        if (b.type === 'final' && a.type !== 'final') return -1;
         return 0; // Maintain order of vehicles
       });
 
       setSlides(loadedSlides);
+      if (loadedSlides.length > 1) {
+        setActiveSlideIndex(1);
+      }
     };
     loadData();
   }, []);
@@ -403,50 +407,38 @@ export default function Admin() {
       const zip = new JSZip();
       const originalIndex = activeSlideIndex;
       
+      let baseName = 'CARROSSEL_UNIMAIS';
+      const vehicleSlide = slides.find(s => s.type === 'veiculo');
+      if (vehicleSlide && vehicleSlide.title) {
+        const rawTitle = vehicleSlide.title.replace(/_carrossel_unimais/i, '');
+        const cleanTitle = rawTitle.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (cleanTitle && cleanTitle !== 'NOVOVEICULO' && cleanTitle !== 'CARRODESTAQUE') {
+          baseName = `${cleanTitle}_CARROSSEL_UNIMAIS`;
+        }
+      }
+      
       for (let i = 0; i < slides.length; i++) {
         setActiveSlideIndex(i);
         // Wait for React to render the new slide and any images to load
         await new Promise(resolve => setTimeout(resolve, 800));
         
         if (previewRef.current) {
-            const canvas = await toCanvas(previewRef.current, {
+            const dataUrl = await toPng(previewRef.current, {
               pixelRatio: 3,
-              backgroundColor: '#012d6a',
-              cacheBust: true
+              backgroundColor: '#012d6a'
             });
-            const imgData = canvas.toDataURL('image/png').split(',')[1];
+            const imgData = dataUrl.split(',')[1];
             
-            // Clean slide filename parts to avoid duplicate _carrossel_unimais or broken text
-            let slideName = slides[i].type as string; // 'capa' or 'final'
-            if (slides[i].type === 'veiculo') {
-              let cleanTitle = slides[i].title || 'veiculo';
-              cleanTitle = cleanTitle.toLowerCase()
-                .replace(/_carrossel_unimais/g, '')
-                .replace(/unimais_carrossel_/g, '')
-                .replace(/[^a-z0-9]+/g, '_')
-                .replace(/^_+|_+$/g, '');
-              slideName = cleanTitle || 'veiculo';
-            }
             const paddedIndex = String(i + 1).padStart(2, '0');
-            const filename = `unimais_carrossel_${paddedIndex}_${slideName}.png`;
+            const filename = `${baseName}_${paddedIndex}.png`;
             zip.file(filename, imgData, {base64: true});
         }
       }
       
       setActiveSlideIndex(originalIndex);
       
-      let vehicleSlide = slides.find(s => s.type === 'veiculo');
-      let fileFriendlyTitle = 'completo';
-      if (vehicleSlide) {
-        fileFriendlyTitle = vehicleSlide.title.toLowerCase()
-          .replace(/_carrossel_unimais/g, '')
-          .replace(/unimais_carrossel_/g, '')
-          .replace(/[^a-z0-9]+/g, '_')
-          .replace(/^_+|_+$/g, '');
-      }
-      
       const content = await zip.generateAsync({type: "blob"});
-      saveAs(content, `carrossel_unimais_${fileFriendlyTitle}.zip`);
+      saveAs(content, `${baseName}.zip`);
       showToast('Carrossel exportado com sucesso (ZIP)!', 'success');
       
     } catch (err) {
@@ -473,8 +465,7 @@ export default function Admin() {
         if (previewRef.current) {
             const canvas = await toCanvas(previewRef.current, {
               pixelRatio: 3,
-              backgroundColor: '#012d6a',
-              cacheBust: true
+              backgroundColor: '#012d6a'
             });
             const imgData = canvas.toDataURL('image/png');
             width = canvas.width;
@@ -497,16 +488,16 @@ export default function Admin() {
       setActiveSlideIndex(originalIndex);
       
       if (pdf) {
-        let vehicleSlide = slides.find(s => s.type === 'veiculo');
-        let fileFriendlyTitle = 'completo';
-        if (vehicleSlide) {
-          fileFriendlyTitle = vehicleSlide.title.toLowerCase()
-            .replace(/_carrossel_unimais/g, '')
-            .replace(/unimais_carrossel_/g, '')
-            .replace(/[^a-z0-9]+/g, '_')
-            .replace(/^_+|_+$/g, '');
+        let baseName = 'CARROSSEL_UNIMAIS';
+        const vehicleSlide = slides.find(s => s.type === 'veiculo');
+        if (vehicleSlide && vehicleSlide.title) {
+          const rawTitle = vehicleSlide.title.replace(/_carrossel_unimais/i, '');
+          const cleanTitle = rawTitle.toUpperCase().replace(/[^A-Z0-9]/g, '');
+          if (cleanTitle && cleanTitle !== 'NOVOVEICULO' && cleanTitle !== 'CARRODESTAQUE') {
+            baseName = `${cleanTitle}_CARROSSEL_UNIMAIS`;
+          }
         }
-        pdf.save(`unimais_carrossel_${fileFriendlyTitle}.pdf`);
+        pdf.save(`${baseName}.pdf`);
         showToast('PDF do carrossel baixado com sucesso!', 'success');
       }
       
@@ -942,46 +933,6 @@ export default function Admin() {
                           </div>
                         )}
 
-                        {/* Slide Type Switcher */}
-                        <div className="space-y-1.5">
-                          <label className="text-white/60 uppercase text-[9px] tracking-wider block">Tipo de Slide</label>
-                          <div className="grid grid-cols-3 gap-2 bg-[#121218] p-1 rounded-xl border border-white/5">
-                            <button
-                              type="button"
-                              onClick={() => updateActiveSlideField('type', 'capa')}
-                              className={`py-2 text-[10px] uppercase tracking-wider rounded-lg transition-colors ${
-                                activeSlide.type === 'capa'
-                                  ? 'bg-[#C46A1A] text-black font-bold'
-                                  : 'text-white/40 hover:text-white'
-                              }`}
-                            >
-                              Capa
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => updateActiveSlideField('type', 'veiculo')}
-                              className={`py-2 text-[10px] uppercase tracking-wider rounded-lg transition-colors ${
-                                activeSlide.type === 'veiculo'
-                                  ? 'bg-[#C46A1A] text-black font-bold'
-                                  : 'text-white/40 hover:text-white'
-                              }`}
-                            >
-                              Veículo (Placa)
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => updateActiveSlideField('type', 'final')}
-                              className={`py-2 text-[10px] uppercase tracking-wider rounded-lg transition-colors ${
-                                activeSlide.type === 'final'
-                                  ? 'bg-[#C46A1A] text-black font-bold'
-                                  : 'text-white/40 hover:text-white'
-                              }`}
-                            >
-                              Final
-                            </button>
-                          </div>
-                        </div>
-
                                                 {/* CONDITIONAL CONTROLS BASED ON TYPE */}
                         {activeSlide.type === 'capa' ? (
                           // COVER SLIDE EDITABLES
@@ -1251,13 +1202,6 @@ export default function Admin() {
                         </div>
                         <div className="flex gap-3 w-full sm:w-auto">
                           <button
-                            onClick={handleSaveSlides}
-                            className="flex-1 sm:flex-none bg-[#102a1a] hover:bg-emerald-950 text-emerald-400 border border-emerald-500/30 font-mono font-bold text-xs uppercase tracking-widest py-3 px-5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/5"
-                          >
-                            <FolderOpen className="w-4 h-4" />
-                            Salvar Slides
-                          </button>
-                          <button
                             onClick={handleDownloadPNG}
                             className="flex-1 sm:flex-none bg-[#C46A1A] hover:bg-[#FF7A00] text-black font-mono font-bold text-xs uppercase tracking-widest py-3 px-5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#C46A1A]/10"
                           >
@@ -1307,10 +1251,10 @@ export default function Admin() {
                             
                             // A. COVER LAYOUT (FIXED IMAGE)
                             <div className="flex-1 w-full h-full relative">
-                              <img 
-                                src="https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274799/odxwrvzl99npzp7kqi5d.png" 
+                              <CorsImage 
+                                src={activeSlide.imageUrl || "https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274799/odxwrvzl99npzp7kqi5d.png"}
                                 alt="Capa" 
-                                className="absolute inset-0 w-full h-full object-cover" crossOrigin="anonymous" 
+                                className="absolute inset-0 w-full h-full object-cover" 
                               />
                             </div>
 
@@ -1321,7 +1265,7 @@ export default function Admin() {
                               
                               {/* Background Car Photo */}
                               {activeSlide.imageUrl && (
-                                <img
+                                <CorsImage
                                   src={activeSlide.imageUrl}
                                   alt="Carro Oferta"
                                   className="absolute max-w-none origin-center z-0"
@@ -1331,21 +1275,19 @@ export default function Admin() {
                                     height: '100%',
                                     objectFit: 'contain'
                                   }}
-                                  crossOrigin="anonymous"
-                                  referrerPolicy="no-referrer"
                                 />
                               )}
 
                               {/* FIXED PNG OVERLAY */}
-                              <img 
+                              <CorsImage 
                                 src="https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274796/ujijynb4i1ovomlekkrj.png" 
                                 alt="Base Frame" 
-                                className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none" crossOrigin="anonymous" 
+                                className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none" 
                               />
                                 
                               {/* Header Texts (Transparent background) */}
                               <div className="absolute top-[25px] left-0 w-full px-[20px] z-20 pointer-events-none font-saira uppercase italic" style={{ fontFamily: '"Saira Extra Condensed", sans-serif' }}>
-                                <div className="text-[#0377f9] leading-none font-light tracking-widest italic" style={{ fontSize: '24px', color: '#0377f9', marginBottom: '-4px' }}>
+                                <div className="text-[#0377f9] leading-none font-extrabold tracking-normal italic" style={{ fontSize: '20px', color: '#0377f9', marginBottom: '-4px' }}>
                                   {activeSlide.fabricante || 'FABRICANTE'}
                                 </div>
                                 <div className="text-[#1b3265] leading-none font-black tracking-tighter italic" style={{ fontSize: '48px', color: '#1b3265', marginBottom: '2px', marginTop: '-8px' }}>
@@ -1364,10 +1306,10 @@ export default function Admin() {
                           ) : (
                             // C. FINAL TEMPLATE (FIXED IMAGE)
                             <div className="flex-1 w-full h-full relative">
-                              <img 
-                                src="https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274796/rhd5ngpu9rhntpkqeh7v.png" 
+                              <CorsImage 
+                                src={activeSlide.imageUrl || "https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274796/rhd5ngpu9rhntpkqeh7v.png"}
                                 alt="Final" 
-                                className="absolute inset-0 w-full h-full object-cover" crossOrigin="anonymous" 
+                                className="absolute inset-0 w-full h-full object-cover" 
                               />
                             </div>
                           )}
