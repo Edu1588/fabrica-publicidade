@@ -1,30 +1,12 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Fábrica Publicidade</title>
-    <meta name="description" content="Fábrica Publicidade - Especialistas em marcas, comunicação e desenvolvimento criativo." />
-    <meta name="robots" content="index, follow" />
-    <meta property="og:title" content="Fábrica Publicidade" />
-    <meta property="og:description" content="Fábrica Publicidade - Especialistas em marcas, comunicação e desenvolvimento criativo." />
-    <meta property="og:type" content="website" />
-    <meta name="theme-color" content="#121212" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Barlow+Condensed:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Saira+Extra+Condensed:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" crossorigin="anonymous">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recuperação Necessária</title>
   </head>
   <body>
     <div id="root"></div>
-    <!-- Simple global error fallback in case JS execution fails entirely -->
-    <script>
-      window.addEventListener('error', function(e) {
-        if (!document.getElementById('root').innerHTML) {
-          document.body.innerHTML += '<div style="color:red; background:black; padding:20px; font-family:sans-serif; z-index:9999; position:fixed; top:0; left:0; right:0; bottom:0;"><h2>Erro na inicialização da página</h2><p>O navegador não conseguiu carregar o aplicativo. Pode ser uma versão de navegador incompatível.</p><p><b>Detalhes do erro:</b> ' + e.message + '</p></div>';
-        }
-      });
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
