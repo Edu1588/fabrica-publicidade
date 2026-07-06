@@ -228,7 +228,7 @@ export default function Admin() {
           fabricante: data.data.montadora || '',
           modelo: data.data.modelo || '',
           descricao: data.data.descricao || '',
-          title: `${scrapeQuery.toUpperCase().replace(/[^A-Z0-9]/g, '')}_carrossel_unimais`
+          title: scrapeQuery.toUpperCase().replace(/[^A-Z0-9]/g, '')
         });
         setToast({ message: 'Dados importados com sucesso!', type: 'success' });
         setScrapeQuery('');
@@ -410,8 +410,7 @@ export default function Admin() {
       let baseName = 'CARROSSEL_UNIMAIS';
       const vehicleSlide = slides.find(s => s.type === 'veiculo');
       if (vehicleSlide && vehicleSlide.title) {
-        const rawTitle = vehicleSlide.title.replace(/_carrossel_unimais/i, '');
-        const cleanTitle = rawTitle.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const cleanTitle = vehicleSlide.title.toLowerCase().replace(/carrossel/g, '').replace(/unimais/g, '').replace(/_/g, '').toUpperCase().trim();
         if (cleanTitle && cleanTitle !== 'NOVOVEICULO' && cleanTitle !== 'CARRODESTAQUE') {
           baseName = `${cleanTitle}_CARROSSEL_UNIMAIS`;
         }
@@ -491,8 +490,7 @@ export default function Admin() {
         let baseName = 'CARROSSEL_UNIMAIS';
         const vehicleSlide = slides.find(s => s.type === 'veiculo');
         if (vehicleSlide && vehicleSlide.title) {
-          const rawTitle = vehicleSlide.title.replace(/_carrossel_unimais/i, '');
-          const cleanTitle = rawTitle.toUpperCase().replace(/[^A-Z0-9]/g, '');
+          const cleanTitle = vehicleSlide.title.toLowerCase().replace(/carrossel/g, '').replace(/unimais/g, '').replace(/_/g, '').toUpperCase().trim();
           if (cleanTitle && cleanTitle !== 'NOVOVEICULO' && cleanTitle !== 'CARRODESTAQUE') {
             baseName = `${cleanTitle}_CARROSSEL_UNIMAIS`;
           }
