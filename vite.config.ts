@@ -13,6 +13,17 @@ export default defineConfig(() => {
         targets: ['defaults', 'not IE 11']
       })
     ],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'react-router-dom'],
+            three: ['three', '@react-three/fiber', '@react-three/drei'],
+            utils: ['gsap', 'html2canvas', 'jspdf']
+          }
+        }
+      }
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
