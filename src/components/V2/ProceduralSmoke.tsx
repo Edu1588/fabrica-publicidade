@@ -138,7 +138,7 @@ const fragmentShader = `
         float grain = fract(sin(dot(vUv * (uTime * 0.1), vec2(12.9898, 78.233))) * 43758.5453) * 0.02;
         col += grain;
 
-        gl_FragColor = vec4(col, clamp(f * 2.0, 0.0, 1.0));
+        gl_FragColor = vec4(col, 1.0);
     }
 `;
 
@@ -148,119 +148,129 @@ export default function ProceduralSmoke() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: true });
-    renderer.setClearColor(0x000000, 0);
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    
-    containerRef.current.appendChild(renderer.domElement);
-
-    const uniforms = {
-        uTime: { value: 0 },
-        uResolution: { value: new THREE.Vector2(width, height) },
-        uMouse: { value: new THREE.Vector2(0.5, 0.5) }
-    };
-
-    const material = new THREE.ShaderMaterial({
-        vertexShader,
-        fragmentShader,
-        uniforms,
-        depthWrite: false,
-        depthTest: false
-    });
-
-    const geometry = new THREE.PlaneGeometry(2, 2);
-    const plane = new THREE.Mesh(geometry, material);
-    scene.add(plane);
-
-    const renderTarget = new THREE.WebGLRenderTarget(width, height, {
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter,
-        format: THREE.RGBAFormat,
-        type: THREE.HalfFloatType
-    });
-
-    const composer = new EffectComposer(renderer, renderTarget);
-    const renderPass = new RenderPass(scene, camera);
-    composer.addPass(renderPass);
-
-    const bloomPass = new UnrealBloomPass(
-        new THREE.Vector2(width, height),
-        0.3,
-        0.8,
-        0.6
-    );
-    composer.addPass(bloomPass);
-
-    let targetMouse = new THREE.Vector2(0.5, 0.5);
-    let currentMouse = new THREE.Vector2(0.5, 0.5);
-
-    const onPointerMove = (event: MouseEvent | TouchEvent) => {
-        let x, y;
-        if ('touches' in event) {
-            x = event.touches[0].clientX;
-            y = event.touches[0].clientY;
-        } else {
-            x = event.clientX;
-            y = event.clientY;
-        }
-        
-        targetMouse.x = x / window.innerWidth;
-        targetMouse.y = 1.0 - (y / window.innerHeight);
-    };
-
-    window.addEventListener('mousemove', onPointerMove);
-    window.addEventListener('touchmove', onPointerMove, { passive: true });
-
-    const onResize = () => {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        
-        renderer.setSize(w, h);
-        composer.setSize(w, h);
-        uniforms.uResolution.value.set(w, h);
-    };
-
-    window.addEventListener("resize", onResize);
-
-    const clock = new THREE.Clock();
+    let renderer: THREE.WebGLRenderer | null = null;
+    let geometry: THREE.PlaneGeometry | null = null;
+    let material: THREE.ShaderMaterial | null = null;
+    let renderTarget: THREE.WebGLRenderTarget | null = null;
+    let composer: any = null;
     let animationFrameId: number;
 
-    const animate = () => {
-        animationFrameId = requestAnimationFrame(animate);
+    try {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
 
-        currentMouse.lerp(targetMouse, 0.05);
-        uniforms.uMouse.value.copy(currentMouse);
-        uniforms.uTime.value = clock.getElapsedTime();
+      const scene = new THREE.Scene();
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: true });
+      renderer.setClearColor(0x000000, 0);
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      
+      containerRef.current.appendChild(renderer.domElement);
 
-        composer.render();
-    };
+      const uniforms = {
+          uTime: { value: 0 },
+          uResolution: { value: new THREE.Vector2(width, height) },
+          uMouse: { value: new THREE.Vector2(0.5, 0.5) }
+      };
 
-    animate();
+      material = new THREE.ShaderMaterial({
+          vertexShader,
+          fragmentShader,
+          uniforms,
+          depthWrite: false,
+          depthTest: false
+      });
 
-    return () => {
-        window.removeEventListener('mousemove', onPointerMove);
-        window.removeEventListener('touchmove', onPointerMove);
-        window.removeEventListener('resize', onResize);
-        cancelAnimationFrame(animationFrameId);
-        
-        if (containerRef.current) {
-            containerRef.current.removeChild(renderer.domElement);
-        }
-        
-        geometry.dispose();
-        material.dispose();
-        renderer.dispose();
-        renderTarget.dispose();
-        composer.dispose();
-    };
+      geometry = new THREE.PlaneGeometry(2, 2);
+      const plane = new THREE.Mesh(geometry, material);
+      scene.add(plane);
+
+      renderTarget = new THREE.WebGLRenderTarget(width, height, {
+          minFilter: THREE.LinearFilter,
+          magFilter: THREE.LinearFilter,
+          format: THREE.RGBAFormat,
+          type: THREE.HalfFloatType
+      });
+
+      composer = new EffectComposer(renderer, renderTarget);
+      const renderPass = new RenderPass(scene, camera);
+      composer.addPass(renderPass);
+
+      const bloomPass = new UnrealBloomPass(
+          new THREE.Vector2(width, height),
+          0.3,
+          0.8,
+          0.6
+      );
+      composer.addPass(bloomPass);
+
+      let targetMouse = new THREE.Vector2(0.5, 0.5);
+      let currentMouse = new THREE.Vector2(0.5, 0.5);
+
+      const onPointerMove = (event: MouseEvent | TouchEvent) => {
+          let x, y;
+          if ('touches' in event) {
+              x = event.touches[0].clientX;
+              y = event.touches[0].clientY;
+          } else {
+              x = event.clientX;
+              y = event.clientY;
+          }
+          
+          targetMouse.x = x / window.innerWidth;
+          targetMouse.y = 1.0 - (y / window.innerHeight);
+      };
+
+      window.addEventListener('mousemove', onPointerMove);
+      window.addEventListener('touchmove', onPointerMove, { passive: true });
+
+      const onResize = () => {
+          const w = window.innerWidth;
+          const h = window.innerHeight;
+          
+          if (renderer) renderer.setSize(w, h);
+          if (composer) composer.setSize(w, h);
+          uniforms.uResolution.value.set(w, h);
+      };
+
+      window.addEventListener("resize", onResize);
+
+      const clock = new THREE.Clock();
+      const animate = () => {
+          animationFrameId = requestAnimationFrame(animate);
+
+          currentMouse.lerp(targetMouse, 0.05);
+          uniforms.uMouse.value.copy(currentMouse);
+          uniforms.uTime.value = clock.getElapsedTime();
+
+          if (composer) composer.render();
+      };
+
+      animate();
+
+      return () => {
+          window.removeEventListener('mousemove', onPointerMove);
+          window.removeEventListener('touchmove', onPointerMove);
+          window.removeEventListener('resize', onResize);
+          cancelAnimationFrame(animationFrameId);
+          
+          if (containerRef.current && renderer && renderer.domElement && containerRef.current.contains(renderer.domElement)) {
+              containerRef.current.removeChild(renderer.domElement);
+          }
+          
+          if (geometry) geometry.dispose();
+          if (material) material.dispose();
+          if (renderer) renderer.dispose();
+          if (renderTarget) renderTarget.dispose();
+          if (composer) composer.dispose();
+      };
+    } catch (e) {
+      console.warn("Failed to initialize WebGL for ProceduralSmoke:", e);
+      return () => {};
+    }
   }, []);
 
-  return <div ref={containerRef} className="absolute inset-0 z-10 pointer-events-none  opacity-80" />;
+  return <div ref={containerRef} className="absolute inset-0 z-10 pointer-events-none opacity-80 mix-blend-screen" />;
 }

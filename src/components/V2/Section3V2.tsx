@@ -135,14 +135,14 @@ export default function Section3V2() {
               {/* Project 1 */}
               <div className="absolute w-[70%] h-[60%] top-[10%] right-0 z-10 shadow-2xl overflow-hidden group">
                  <div className="w-full h-full transform transition-transform duration-1000 group-hover:scale-105">
-                   <LiquidImage src="https://images.unsplash.com/photo-1493012896593-90dcc687b8b4?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" />
+                   <LiquidImage src="https://images.unsplash.com/photo-1624382497193-de32b368de64?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" className="w-full h-full object-cover" />
                  </div>
               </div>
               
               {/* Project 2 */}
               <div className="absolute w-[60%] h-[50%] bottom-[10%] left-0 z-20 shadow-2xl overflow-hidden group">
                  <div className="w-full h-full transform transition-transform duration-1000 group-hover:scale-105">
-                   <LiquidImage src="https://images.unsplash.com/photo-1621532159074-ce443bd1df59?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" />
+                   <LiquidImage src="https://images.unsplash.com/photo-1624382497193-de32b368de64?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" className="w-full h-full object-cover" />
                  </div>
               </div>
             </div>

@@ -4,7 +4,24 @@ import { createServer as createViteServer } from "vite";
 import * as cheerio from "cheerio";
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+function getAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY environment variable is required.");
+    }
+    aiInstance = new GoogleGenAI({
+      apiKey: apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+  }
+  return aiInstance;
+}
 
 async function startServer() {
   const app = express();
@@ -88,7 +105,7 @@ Text to extract from:
 ${cleanHtml}
 `;
 
-      const response = await ai.models.generateContent({
+      const response = await getAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
       });

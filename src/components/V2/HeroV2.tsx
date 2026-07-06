@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { useLanguage } from '../../contexts/LanguageContext';
-import ProceduralSmoke from './ProceduralSmoke';
 
 export default function HeroV2() {
   const displacementRef = useRef<SVGFEDisplacementMapElement>(null);
@@ -12,8 +11,6 @@ export default function HeroV2() {
   const headlineEn = localStorage.getItem('aforja_headline_en') || "Great brands are not born ready.";
   const text = t(headlinePt, headlineEn);
   const chars = text.split("");
-  
-  const smokeEnabled = localStorage.getItem('aforja_smoke_enabled') !== 'false';
   
   useEffect(() => {
     // Delay matches the previous Loader timing
@@ -37,7 +34,6 @@ export default function HeroV2() {
 
   return (
     <section className="relative h-screen w-full flex flex-col justify-center bg-[#0c0c0c] overflow-hidden">
-      {smokeEnabled && <ProceduralSmoke />}
       <svg className="fixed pointer-events-none w-0 h-0">
         <defs>
           <filter id="hero-liquid" x="-20%" y="-20%" width="140%" height="140%">
@@ -55,9 +51,9 @@ export default function HeroV2() {
       </svg>
       {/* Background Image */}
       <div 
-        className="absolute inset-0 -z-10 opacity-60 scale-105"
+        className="absolute inset-0 z-0 opacity-60 scale-105"
         style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1624382497193-de32b368de64?q=80&w=1170&auto=format&fit=crop")',
+          backgroundImage: 'url("https://images.unsplash.com/photo-1624382497193-de32b368de64?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}

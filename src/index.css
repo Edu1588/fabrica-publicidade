@@ -18,7 +18,7 @@
 body {
   background-color: var(--color-coal);
   color: var(--color-ivory);
-  font-family: var(--font-sans);
+  font-family: var(--font-heading);
 }
 
 h1, h2, h3, h4, h5, h6 {

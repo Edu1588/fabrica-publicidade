@@ -17,8 +17,10 @@ import {
   Grid,
   FileText
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { toCanvas } from 'html-to-image';
 import { jsPDF } from 'jspdf';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { supabase } from '../lib/supabase';
 
 // Carousel Item definition
@@ -54,14 +56,14 @@ interface CarouselSlide {
   posY: number;
 
   // Conditions
-  condicao1Label: string;
-  condicao1Val: string;
-  condicao2Label: string;
-  condicao2Val: string;
-  condicao3Label: string;
-  condicao3Val: string;
-  condicao4Label: string;
-  condicao4Val: string;
+  condicao1Label?: string;
+  condicao1Val?: string;
+  condicao2Label?: string;
+  condicao2Val?: string;
+  condicao3Label?: string;
+  condicao3Val?: string;
+  condicao4Label?: string;
+  condicao4Val?: string;
 
   // Footer
   website: string;
@@ -271,10 +273,11 @@ export default function Admin() {
       }
 
       const { data: slidesData } = await supabase.from('slides').select('*').order('order_index', { ascending: true });
+      let loadedSlides: CarouselSlide[] = [];
       if (slidesData && slidesData.length > 0) {
-        setSlides(slidesData.map(s => ({
+        loadedSlides = slidesData.map(s => ({
           id: s.id,
-          type: s.type,
+          type: s.type as 'capa' | 'veiculo' | 'final',
           title: s.title,
           fabricante: s.fabricante || '',
           modelo: s.modelo || '',
@@ -294,88 +297,222 @@ export default function Admin() {
           condicao4Val: s.condicao4val || '',
           website: s.website || '',
           imageFileName: s.imagefilename || ''
-        })));
+        }));
       }
+
+      // Guarantee there is exactly one Capa slide at the start
+      const hasCapa = loadedSlides.some(s => s.type === 'capa');
+      if (!hasCapa) {
+        loadedSlides.unshift({
+          id: crypto.randomUUID(),
+          type: 'capa',
+          title: 'CAPA DO CARROSSEL',
+          imageUrl: 'https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274799/odxwrvzl99npzp7kqi5d.png',
+          zoom: 1,
+          posX: 0,
+          posY: 0,
+          website: 'unimaisveiculos.com.br'
+        });
+      }
+
+      // Guarantee there is exactly one Final slide at the end
+      const hasFinal = loadedSlides.some(s => s.type === 'final');
+      if (!hasFinal) {
+        loadedSlides.push({
+          id: crypto.randomUUID(),
+          type: 'final',
+          title: 'FINAL DO CARROSSEL',
+          imageUrl: 'https://res.cloudinary.com/djw0tqmiw/image/upload/v1783274796/rhd5ngpu9rhntpkqeh7v.png',
+          zoom: 1,
+          posX: 0,
+          posY: 0,
+          website: 'unimaisveiculos.com.br'
+        });
+      }
+
+      // Sort to ensure Capa is first, Final is last, and vehicles are in between
+      loadedSlides.sort((a, b) => {
+        if (a.type === 'capa') return -1;
+        if (b.type === 'capa') return 1;
+        if (a.type === 'final') return 1;
+        if (b.type === 'final') return -1;
+        return 0; // Maintain order of vehicles
+      });
+
+      setSlides(loadedSlides);
     };
     loadData();
   }, []);
 
-  // Download slide as PNG
-  const handleDownloadPNG = async () => {
-    if (!previewRef.current || !activeSlide) return;
-    
-    showToast('Processando download de imagem...');
+  // Save slides state to Supabase database
+  const handleSaveSlides = async () => {
     try {
-      const canvas = await html2canvas(previewRef.current, {
-        useCORS: true,
-        scale: 3, // Very high crisp resolution!
-        backgroundColor: '#012d6a',
-        logging: false
-      });
+      showToast('Salvando alterações do carrossel no banco de dados...');
       
-      const fileFriendlyTitle = activeSlide.title.toLowerCase().replace(/[^a-z0-9]+/g, '_');
-      const filename = `unimais_carrossel_${fileFriendlyTitle}.png`;
+      // 1. Clear existing slides in database first to prevent duplicates or orphaned records
+      const { error: deleteError } = await supabase
+        .from('slides')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows safely
       
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-      showToast('PNG baixado com sucesso!');
-      
-      // Feature request: Reset image after download if it's a vehicle slide (temporary)
-      if (activeSlide.type === 'veiculo') {
-        setTimeout(() => {
-          updateActiveSlideField('imageUrl', '');
-          updateActiveSlideField('imageFileName', '');
-        }, 1000); // clear after short delay to let download start properly
-      }
+      if (deleteError) throw deleteError;
+
+      // 2. Map current slides list to Supabase schema payload
+      const dbPayload = slides.map((s, idx) => ({
+        id: s.id,
+        type: s.type,
+        title: s.title,
+        fabricante: s.fabricante || null,
+        modelo: s.modelo || null,
+        descricao: s.descricao || null,
+        lojascapa: s.lojasCapa || null,
+        imageurl: s.imageUrl || null,
+        zoom: s.zoom || 1,
+        posx: s.posX || 0,
+        posy: s.posY || 0,
+        condicao1label: s.condicao1Label || null,
+        condicao1val: s.condicao1Val || null,
+        condicao2label: s.condicao2Label || null,
+        condicao2val: s.condicao2Val || null,
+        condicao3label: s.condicao3Label || null,
+        condicao3val: s.condicao3Val || null,
+        condicao4label: s.condicao4Label || null,
+        condicao4val: s.condicao4Val || null,
+        website: s.website || null,
+        imagefilename: s.imageFileName || null,
+        order_index: idx
+      }));
+
+      // 3. Insert newly ordered and updated slides
+      const { error: insertError } = await supabase.from('slides').insert(dbPayload);
+      if (insertError) throw insertError;
+
+      showToast('Carrossel salvo no banco de dados com sucesso!', 'success');
     } catch (err) {
       console.error(err);
-      showToast('Erro ao exportar PNG.', 'error');
+      showToast('Erro ao salvar o carrossel no banco de dados.', 'error');
+    }
+  };
+
+  // Download slide as PNG
+  const handleDownloadPNG = async () => {
+    if (!previewRef.current || slides.length === 0) return;
+    
+    showToast('Processando download do carrossel (PNG)... Isso pode levar alguns segundos.');
+    try {
+      const zip = new JSZip();
+      const originalIndex = activeSlideIndex;
+      
+      for (let i = 0; i < slides.length; i++) {
+        setActiveSlideIndex(i);
+        // Wait for React to render the new slide and any images to load
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        if (previewRef.current) {
+            const canvas = await toCanvas(previewRef.current, {
+              pixelRatio: 3,
+              backgroundColor: '#012d6a',
+              cacheBust: true
+            });
+            const imgData = canvas.toDataURL('image/png').split(',')[1];
+            
+            // Clean slide filename parts to avoid duplicate _carrossel_unimais or broken text
+            let slideName = slides[i].type as string; // 'capa' or 'final'
+            if (slides[i].type === 'veiculo') {
+              let cleanTitle = slides[i].title || 'veiculo';
+              cleanTitle = cleanTitle.toLowerCase()
+                .replace(/_carrossel_unimais/g, '')
+                .replace(/unimais_carrossel_/g, '')
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '');
+              slideName = cleanTitle || 'veiculo';
+            }
+            const paddedIndex = String(i + 1).padStart(2, '0');
+            const filename = `unimais_carrossel_${paddedIndex}_${slideName}.png`;
+            zip.file(filename, imgData, {base64: true});
+        }
+      }
+      
+      setActiveSlideIndex(originalIndex);
+      
+      let vehicleSlide = slides.find(s => s.type === 'veiculo');
+      let fileFriendlyTitle = 'completo';
+      if (vehicleSlide) {
+        fileFriendlyTitle = vehicleSlide.title.toLowerCase()
+          .replace(/_carrossel_unimais/g, '')
+          .replace(/unimais_carrossel_/g, '')
+          .replace(/[^a-z0-9]+/g, '_')
+          .replace(/^_+|_+$/g, '');
+      }
+      
+      const content = await zip.generateAsync({type: "blob"});
+      saveAs(content, `carrossel_unimais_${fileFriendlyTitle}.zip`);
+      showToast('Carrossel exportado com sucesso (ZIP)!', 'success');
+      
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao exportar Carrossel (PNG).', 'error');
     }
   };
 
   // Download slide as PDF
   const handleDownloadPDF = async () => {
-    if (!previewRef.current || !activeSlide) return;
+    if (!previewRef.current || slides.length === 0) return;
     
-    showToast('Gerando documento PDF...');
+    showToast('Gerando Carrossel em PDF... Isso pode levar alguns segundos.');
     try {
-      const canvas = await html2canvas(previewRef.current, {
-        useCORS: true,
-        scale: 3,
-        backgroundColor: '#012d6a',
-        logging: false
-      });
+      const originalIndex = activeSlideIndex;
+      let pdf: any = null;
+      let width = 0;
+      let height = 0;
       
-      const imgData = canvas.toDataURL('image/png');
-      const width = canvas.width;
-      const height = canvas.height;
-      
-      // Create high res standard page PDF
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: [width / 3, height / 3] // scaled to match CSS rendering scale
-      });
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, width / 3, height / 3);
-      
-      const fileFriendlyTitle = activeSlide.title.toLowerCase().replace(/[^a-z0-9]+/g, '_');
-      const filename = `unimais_carrossel_${fileFriendlyTitle}.pdf`;
-      pdf.save(filename);
-      showToast('PDF baixado com sucesso!');
-      
-      // Reset image after download if it's a vehicle slide (temporary)
-      if (activeSlide.type === 'veiculo') {
-        setTimeout(() => {
-          updateActiveSlideField('imageUrl', '');
-          updateActiveSlideField('imageFileName', '');
-        }, 1000);
+      for (let i = 0; i < slides.length; i++) {
+        setActiveSlideIndex(i);
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        if (previewRef.current) {
+            const canvas = await toCanvas(previewRef.current, {
+              pixelRatio: 3,
+              backgroundColor: '#012d6a',
+              cacheBust: true
+            });
+            const imgData = canvas.toDataURL('image/png');
+            width = canvas.width;
+            height = canvas.height;
+            
+            if (!pdf) {
+                pdf = new jsPDF({
+                  orientation: 'portrait',
+                  unit: 'px',
+                  format: [width / 3, height / 3]
+                });
+            } else {
+                pdf.addPage([width / 3, height / 3], 'portrait');
+            }
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, width / 3, height / 3);
+        }
       }
+      
+      setActiveSlideIndex(originalIndex);
+      
+      if (pdf) {
+        let vehicleSlide = slides.find(s => s.type === 'veiculo');
+        let fileFriendlyTitle = 'completo';
+        if (vehicleSlide) {
+          fileFriendlyTitle = vehicleSlide.title.toLowerCase()
+            .replace(/_carrossel_unimais/g, '')
+            .replace(/unimais_carrossel_/g, '')
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '');
+        }
+        pdf.save(`unimais_carrossel_${fileFriendlyTitle}.pdf`);
+        showToast('PDF do carrossel baixado com sucesso!', 'success');
+      }
+      
     } catch (err) {
       console.error(err);
-      showToast('Erro ao exportar PDF.', 'error');
+      showToast('Erro ao exportar PDF do carrossel.', 'error');
     }
   };
 
@@ -1114,6 +1251,13 @@ export default function Admin() {
                         </div>
                         <div className="flex gap-3 w-full sm:w-auto">
                           <button
+                            onClick={handleSaveSlides}
+                            className="flex-1 sm:flex-none bg-[#102a1a] hover:bg-emerald-950 text-emerald-400 border border-emerald-500/30 font-mono font-bold text-xs uppercase tracking-widest py-3 px-5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/5"
+                          >
+                            <FolderOpen className="w-4 h-4" />
+                            Salvar Slides
+                          </button>
+                          <button
                             onClick={handleDownloadPNG}
                             className="flex-1 sm:flex-none bg-[#C46A1A] hover:bg-[#FF7A00] text-black font-mono font-bold text-xs uppercase tracking-widest py-3 px-5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#C46A1A]/10"
                           >
@@ -1187,6 +1331,7 @@ export default function Admin() {
                                     height: '100%',
                                     objectFit: 'contain'
                                   }}
+                                  crossOrigin="anonymous"
                                   referrerPolicy="no-referrer"
                                 />
                               )}

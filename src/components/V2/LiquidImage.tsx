@@ -78,6 +78,31 @@ function Scene({ imageUrl, isHovered }: { imageUrl: string, isHovered: boolean }
   );
 }
 
+class CanvasErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.warn("WebGL Canvas failed to load:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
 interface LiquidImageProps {
   src: string;
   className?: string;
@@ -100,14 +125,16 @@ export default function LiquidImage({ src, className = "" }: LiquidImageProps) {
       />
       
       <div className="absolute inset-0 z-10 mix-blend-normal">
-        <Canvas 
-          camera={{ position: [0, 0, 1], left: -0.5, right: 0.5, top: 0.5, bottom: -0.5, near: 0.1, far: 1000 }} 
-          orthographic
-        >
-          <React.Suspense fallback={null}>
-            <Scene imageUrl={src} isHovered={isHovered} />
-          </React.Suspense>
-        </Canvas>
+        <CanvasErrorBoundary fallback={null}>
+          <Canvas 
+            camera={{ position: [0, 0, 1], left: -0.5, right: 0.5, top: 0.5, bottom: -0.5, near: 0.1, far: 1000 }} 
+            orthographic
+          >
+            <React.Suspense fallback={null}>
+              <Scene imageUrl={src} isHovered={isHovered} />
+            </React.Suspense>
+          </Canvas>
+        </CanvasErrorBoundary>
       </div>
     </div>
   );

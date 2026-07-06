@@ -89,7 +89,7 @@ export default function Section2V2() {
       </svg>
       {/* Top Left Image */}
       <div className="absolute top-0 left-0 w-64 h-48 md:w-80 md:h-56 hidden md:block opacity-60 mix-blend-lighten pointer-events-none">
-        <LiquidImage src="https://images.unsplash.com/photo-1518544801976-3e159e50e5bb?q=80&w=800&auto=format&fit=crop" className="w-full h-full" />
+        <LiquidImage src="https://images.unsplash.com/photo-1624382497193-de32b368de64?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" className="w-full h-full" />
       </div>
 
       {/* Left Rotated Text - Sticky Removed per user request */}
@@ -119,12 +119,12 @@ export default function Section2V2() {
         <div className="lg:w-[400px] mt-16 lg:mt-0 relative h-[600px] flex items-center justify-center">
           {/* Main big image */}
           <div className="w-[85%] h-[85%] absolute z-0 shadow-2xl">
-            <LiquidImage src="https://images.unsplash.com/photo-1549429712-4eb00db0b84c?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" />
+            <LiquidImage src="https://images.unsplash.com/photo-1624382497193-de32b368de64?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" className="w-full h-full object-cover" />
           </div>
           
           {/* Overlapping small image */}
           <div className="w-1/2 h-1/3 absolute bottom-0 right-0 z-10 shadow-2xl translate-y-12 translate-x-8">
-            <LiquidImage src="https://images.unsplash.com/photo-1596707323608-8e6d6d45e43a?q=80&w=600&auto=format&fit=crop" className="w-full h-full object-cover" />
+            <LiquidImage src="https://images.unsplash.com/photo-1624382497193-de32b368de64?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" className="w-full h-full object-cover" />
           </div>
         </div>
 

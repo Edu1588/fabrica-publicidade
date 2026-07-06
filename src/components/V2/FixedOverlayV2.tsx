@@ -4,8 +4,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import MenuOverlay from './MenuOverlay';
 
 export default function FixedOverlayV2() {
-  const [timeDubai, setTimeDubai] = useState('');
-  const [timeTokyo, setTimeTokyo] = useState('');
+  const [timeCampinas, setTimeCampinas] = useState('');
+  const [timeNewYork, setTimeNewYork] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { language, toggleLanguage, t } = useLanguage();
 
@@ -13,13 +13,13 @@ export default function FixedOverlayV2() {
     const updateTime = () => {
       const now = new Date();
       
-      // Format Sao Paulo time (BRT)
-      const dubaiOptions: Intl.DateTimeFormatOptions = { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-      setTimeDubai(now.toLocaleTimeString('en-US', dubaiOptions).replace(/:/g, ' '));
+      // Format Campinas time (BRT)
+      const campinasOptions: Intl.DateTimeFormatOptions = { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+      setTimeCampinas(now.toLocaleTimeString('en-US', campinasOptions).replace(/:/g, ' '));
       
-      // Format Tokyo time (JST is UTC+9)
-      const tokyoOptions: Intl.DateTimeFormatOptions = { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-      setTimeTokyo(now.toLocaleTimeString('en-US', tokyoOptions).replace(/:/g, ' '));
+      // Format New York time (EST/EDT)
+      const newYorkOptions: Intl.DateTimeFormatOptions = { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+      setTimeNewYork(now.toLocaleTimeString('en-US', newYorkOptions).replace(/:/g, ' '));
     };
 
     updateTime();
@@ -69,16 +69,16 @@ export default function FixedOverlayV2() {
 
         {/* Bottom Bar */}
         <div className="flex justify-between items-end text-[10px] md:text-xs tracking-[0.15em] font-sans uppercase pointer-events-auto">
-          <div>&copy;2026</div>
+          <div style={{ fontFamily: 'var(--font-heading)' }}>&copy;2026</div>
 
           <div className="hidden md:flex gap-16">
             <div className="flex gap-2">
-              <span className="whitespace-nowrap w-24">{timeDubai}</span>
-              <span className="opacity-60 whitespace-nowrap">BRT, SÃO PAULO BRA</span>
+              <span className="whitespace-nowrap w-24" style={{ fontFamily: 'var(--font-heading)' }}>{timeCampinas}</span>
+              <span className="opacity-60 whitespace-nowrap" style={{ fontFamily: 'var(--font-heading)' }}>BRT, CAMPINAS BRA</span>
             </div>
             <div className="flex gap-2">
-              <span className="whitespace-nowrap w-24">{timeTokyo}</span>
-              <span className="opacity-60 whitespace-nowrap">JST, TOKYO JPN</span>
+              <span className="whitespace-nowrap w-24" style={{ fontFamily: 'var(--font-heading)' }}>{timeNewYork}</span>
+              <span className="opacity-60 whitespace-nowrap" style={{ fontFamily: 'var(--font-heading)' }}>EST, NEW YORK USA</span>
             </div>
           </div>
 
